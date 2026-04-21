@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NL2SQL AI — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0f1e;--paper:#f5f0e8;--gold:#c9a84c;--gold-dim:#9a7833;
+    --steel:#1e2a45;--mist:#e8e2d6;--red:#c0392b;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;font-family:'JetBrains Mono',monospace}
+
+  body{
+    background:var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+
+  /* animated grid */
+  .grid-bg{
+    position:fixed;inset:0;
+    background-image:
+      linear-gradient(rgba(201,168,76,.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,168,76,.06) 1px, transparent 1px);
+    background-size:48px 48px;
+    animation:gridScroll 20s linear infinite;
+  }
+  @keyframes gridScroll{to{background-position:48px 48px}}
+
+  /* glow orbs */
+  .orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:.18;pointer-events:none}
+  .orb-1{width:500px;height:500px;background:#c9a84c;top:-120px;right:-80px;animation:pulse 8s ease-in-out infinite}
+  .orb-2{width:380px;height:380px;background:#1e4478;bottom:-60px;left:-60px;animation:pulse 10s ease-in-out infinite reverse}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+  /* card */
+  .card{
+    position:relative;z-index:10;
+    background:rgba(10,15,30,.92);
+    border:1px solid rgba(201,168,76,.3);
+    border-radius:4px;
+    padding:56px 52px;
+    width:420px;
+    box-shadow:0 0 80px rgba(201,168,76,.08), inset 0 1px 0 rgba(201,168,76,.15);
+    animation:fadeUp .6s ease both;
+  }
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+  .seal{
+    display:flex;align-items:center;gap:12px;margin-bottom:40px;
+  }
+  .seal-icon{font-size:2rem;line-height:1}
+  .seal-text{
+    font-family:'DM Serif Display',serif;
+    font-size:1.4rem;color:var(--gold);letter-spacing:.04em;
+  }
+  .seal-sub{font-size:.62rem;color:#4a5568;letter-spacing:.18em;text-transform:uppercase;margin-top:2px}
+
+  h1{
+    font-family:'DM Serif Display',serif;
+    font-size:1.9rem;color:#e2ddd4;
+    line-height:1.2;margin-bottom:6px;
+  }
+  .subtitle{font-size:.72rem;color:#4a6080;letter-spacing:.14em;text-transform:uppercase;margin-bottom:36px}
+
+  label{display:block;font-size:.65rem;letter-spacing:.16em;color:#5a7090;text-transform:uppercase;margin-bottom:8px}
+
+  .input-wrap{position:relative;margin-bottom:28px}
+  .input-wrap input{
+    width:100%;padding:14px 16px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(201,168,76,.2);
+    border-radius:3px;
+    color:#c8d0e0;
+    font-family:'JetBrains Mono',monospace;
+    font-size:.88rem;letter-spacing:.12em;
+    transition:border-color .2s,box-shadow .2s;
+    outline:none;
+  }
+  .input-wrap input::placeholder{color:#2a3545}
+  .input-wrap input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(201,168,76,.12);
+  }
+  .input-wrap input.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.12)}
+
+  .btn{
+    width:100%;padding:15px;
+    background:var(--gold);
+    border:none;border-radius:3px;cursor:pointer;
+    font-family:'DM Serif Display',serif;
+    font-size:1rem;letter-spacing:.06em;
+    color:var(--ink);font-weight:600;
+    transition:background .2s,transform .1s,box-shadow .2s;
+    position:relative;overflow:hidden;
+  }
+  .btn:hover{background:#d9b85c;box-shadow:0 4px 20px rgba(201,168,76,.35)}
+  .btn:active{transform:scale(.98)}
+  .btn.loading{pointer-events:none}
+  .btn .btn-text{transition:opacity .2s}
+  .btn.loading .btn-text{opacity:0}
+  .btn .spinner{
+    position:absolute;inset:0;display:none;
+    align-items:center;justify-content:center;
+  }
+  .btn.loading .spinner{display:flex}
+  .spinner-ring{
+    width:20px;height:20px;border:2px solid var(--ink);
+    border-top-color:transparent;border-radius:50%;
+    animation:spin .7s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .error-msg{
+    font-size:.72rem;color:#e05c5c;letter-spacing:.08em;
+    margin-top:-20px;margin-bottom:20px;
+    display:none;
+  }
+  .error-msg.show{display:block;animation:shake .3s ease}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+  .footer{margin-top:36px;font-size:.62rem;color:#2a3545;text-align:center;letter-spacing:.1em}
+  .divider{border:none;border-top:1px solid rgba(201,168,76,.1);margin:28px 0}
+
+  /* hint chips */
+  .hints{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+  .hint{
+    padding:4px 12px;border:1px solid rgba(201,168,76,.2);border-radius:2px;
+    font-size:.62rem;color:var(--gold-dim);cursor:pointer;letter-spacing:.1em;
+    transition:border-color .15s,color .15s;
+  }
+  .hint:hover{border-color:var(--gold);color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="card">
+  <div class="seal">
+    <span class="seal-icon">⚖️</span>
+    <div>
+      <div class="seal-text">NL2SQL</div>
+      <div class="seal-sub">Intelligence Platform</div>
+    </div>
+  </div>
+
+  <h1>Secure Access</h1>
+  <p class="subtitle">Authorized Personnel Only</p>
+
+  <label for="emp_id">Employee Identification</label>
+  <div class="hints">
+    <span class="hint" onclick="fillId('E001')">E001 · Admin</span>
+    <span class="hint" onclick="fillId('E002')">E002 · Manager</span>
+    <span class="hint" onclick="fillId('E003')">E003 · Employee</span>
+  </div>
+
+  <div class="input-wrap">
+    <input id="emp_id" type="text" placeholder="e.g. E001" autocomplete="off" spellcheck="false"
+           onkeydown="if(event.key==='Enter') doLogin()"/>
+  </div>
+
+  <p class="error-msg" id="err-msg">Invalid Employee ID. Please try again.</p>
+
+  <button class="btn" id="login-btn" onclick="doLogin()">
+    <span class="btn-text">Access System</span>
+    <span class="spinner"><span class="spinner-ring"></span></span>
+  </button>
+
+  <hr class="divider"/>
+  <p class="footer">All sessions are monitored and audited &nbsp;·&nbsp; LegalBrain AI v2.0</p>
+</div>
+
+<script>
+function fillId(id){
+  document.getElementById('emp_id').value = id;
+  document.getElementById('emp_id').focus();
+}
+
+async function doLogin(){
+  const inp = document.getElementById('emp_id');
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('err-msg');
+  const val = inp.value.trim();
+
+  inp.classList.remove('error');
+  err.classList.remove('show');
+  if(!val) { inp.classList.add('error'); return; }
+
+  btn.classList.add('loading');
+
+  try{
+    const r = await fetch('/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({emp_id: val})
+    });
+    const d = await r.json();
+    if(d.success){
+      window.location.href = '/dashboard';
+    } else {
+      inp.classList.add('error');
+      err.classList.add('show');
+      btn.classList.remove('loading');
+    }
+  } catch(e){
+    err.textContent = 'Connection error. Please retry.';
+    err.classList.add('show');
+    btn.classList.remove('loading');
+  }
+}
+</script>
+</body>
+</html>

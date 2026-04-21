@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NL2SQL AI — Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080d1c;--surface:#0f1829;--panel:#131e33;
+  --border:rgba(201,168,76,.18);--border-hi:rgba(201,168,76,.45);
+  --gold:#c9a84c;--gold-dim:#9a7833;
+  --text:#c8d0e0;--muted:#4a6080;--dim:#2a3a55;
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--blue:#38bdf8;
+  --radius:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ---- LAYOUT ---- */
+.layout{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{
+  width:260px;flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:24px 0;overflow-y:auto;
+}
+.sidebar-logo{
+  padding:0 20px 20px;
+  border-bottom:1px solid var(--border);margin-bottom:16px;
+}
+.logo-mark{font-family:'DM Serif Display',serif;font-size:1.4rem;color:var(--gold);display:flex;align-items:center;gap:10px}
+.logo-sub{font-size:.58rem;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.user-chip{
+  margin:0 12px 16px;padding:10px 14px;
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+}
+.user-name{font-size:.78rem;color:var(--text);font-weight:500}
+.user-role{font-size:.6rem;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;margin-top:3px}
+.role-badge{
+  display:inline-block;padding:2px 8px;border-radius:2px;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;margin-top:6px;
+}
+.role-Admin{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.role-Manager{background:rgba(56,189,248,.12);color:var(--blue);border:1px solid rgba(56,189,248,.25)}
+.role-Employee{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.25)}
+
+.sidebar-section{padding:0 12px;margin-bottom:8px}
+.sidebar-label{font-size:.57rem;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;padding:0 8px;margin-bottom:8px}
+.db-btn{
+  display:flex;align-items:center;gap:8px;
+  width:100%;padding:9px 12px;border:1px solid transparent;
+  border-radius:4px;background:none;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);
+  text-align:left;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.db-btn:hover{background:var(--panel);color:var(--text);border-color:var(--border)}
+.db-btn.active{background:rgba(201,168,76,.08);color:var(--gold);border-color:rgba(201,168,76,.3)}
+.db-btn .db-icon{flex-shrink:0;font-size:.9rem}
+
+.upload-area{
+  margin:0 12px;padding:12px;
+  border:1px dashed var(--border);border-radius:var(--radius);
+  cursor:pointer;text-align:center;transition:border-color .2s,background .2s;
+}
+.upload-area:hover{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.upload-area p{font-size:.65rem;color:var(--muted)}
+#file-input{display:none}
+
+.sidebar-footer{margin-top:auto;padding:16px 12px 0;border-top:1px solid var(--border)}
+.logout-btn{
+  width:100%;padding:10px;border:1px solid var(--border);border-radius:4px;
+  background:none;cursor:pointer;font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;color:var(--muted);transition:all .15s;
+}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+
+/* TAB SWITCHER */
+.tab-nav{display:flex;border-bottom:1px solid var(--border);padding:0 24px;background:var(--surface);flex-shrink:0}
+.tab-btn{
+  padding:14px 20px;background:none;border:none;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;letter-spacing:.1em;
+  color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.main-inner{flex:1;overflow-y:auto;padding:24px}
+
+/* ACTIVE DB BANNER */
+.active-banner{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;margin-bottom:20px;
+  background:rgba(201,168,76,.06);border:1px solid var(--border);
+  border-radius:var(--radius);font-size:.7rem;color:var(--gold-dim);
+}
+.active-banner strong{color:var(--gold)}
+
+/* QUERY INPUT */
+.query-input-wrap{
+  display:flex;gap:10px;margin-bottom:24px;
+  padding:16px;background:var(--panel);
+  border:1px solid var(--border);border-radius:var(--radius);
+  transition:border-color .2s;
+}
+.query-input-wrap:focus-within{border-color:var(--border-hi)}
+.query-input-wrap input{
+  flex:1;background:none;border:none;outline:none;
+  font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--text);
+}
+.query-input-wrap input::placeholder{color:var(--dim)}
+.send-btn{
+  padding:8px 20px;background:var(--gold);border:none;border-radius:4px;cursor:pointer;
+  font-family:'DM Serif Display',serif;font-size:.9rem;color:#080d1c;
+  transition:background .15s,transform .1s;white-space:nowrap;
+}
+.send-btn:hover{background:#d9b85c}
+.send-btn:active{transform:scale(.97)}
+.send-btn:disabled{opacity:.5;pointer-events:none}
+
+/* PIPELINE */
+.pipeline{padding:16px;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:20px}
+.pipeline-title{font-size:.62rem;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+.step{display:flex;align-items:center;gap:12px;padding:6px 0;font-size:.75rem}
+.step-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:all .3s}
+.step-dot.pending{background:var(--dim)}
+.step-dot.active{background:var(--blue);box-shadow:0 0 8px var(--blue);animation:blink .8s ease infinite}
+.step-dot.done{background:var(--green)}
+.step-label{color:var(--muted);transition:color .3s}
+.step-label.active{color:var(--blue)}
+.step-label.done{color:var(--text)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* RESULT CARDS */
+.result-section{margin-top:4px}
+.sql-block{
+  padding:14px 16px;
+  background:rgba(0,0,0,.4);border:1px solid var(--border);border-left:3px solid var(--gold);
+  border-radius:4px;font-size:.78rem;color:#a0c0e0;white-space:pre-wrap;word-break:break-all;
+  font-family:'JetBrains Mono',monospace;margin-bottom:14px;
+}
+.result-meta{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+  padding:8px 14px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:4px;
+  font-size:.7rem;color:var(--green);
+}
+.export-btn{
+  margin-left:auto;padding:5px 14px;border:1px solid rgba(16,185,129,.3);border-radius:3px;
+  background:none;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.65rem;color:var(--green);
+  transition:all .15s;
+}
+.export-btn:hover{background:rgba(16,185,129,.1)}
+
+/* TABLE */
+.table-wrap{overflow:auto;border:1px solid var(--border);border-radius:4px;max-height:420px}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+thead{position:sticky;top:0;background:var(--panel);z-index:2}
+th{padding:10px 14px;text-align:left;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:9px 14px;border-bottom:1px solid rgba(201,168,76,.06);color:var(--text)}
+tr:hover td{background:rgba(201,168,76,.04)}
+tr:last-child td{border-bottom:none}
+
+/* ALERT BANNERS */
+.alert{padding:14px 18px;border-radius:4px;font-size:.78rem;margin-bottom:16px}
+.alert-warning{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--amber);border-left:4px solid var(--amber)}
+.alert-error{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:var(--red);border-left:4px solid var(--red)}
+.alert-success{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:var(--green);border-left:4px solid var(--green)}
+
+/* DML MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;
+  display:none;align-items:center;justify-content:center;
+  backdrop-filter:blur(4px);
+}
+.modal-overlay.show{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border-hi);border-radius:8px;
+  padding:32px;width:540px;max-width:95vw;
+  animation:modalIn .25s ease both;
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-icon{font-size:2.4rem;margin-bottom:16px}
+.modal h2{font-family:'DM Serif Display',serif;font-size:1.5rem;color:var(--amber);margin-bottom:8px}
+.modal-sub{font-size:.72rem;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.modal .row-count{
+  display:inline-block;padding:4px 14px;
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);
+  border-radius:3px;font-size:1rem;color:var(--red);font-weight:600;margin:0 4px;
+}
+.modal-sql{
+  padding:12px 14px;background:rgba(0,0,0,.4);border:1px solid var(--border);
+  border-radius:4px;font-size:.72rem;color:#a0c0e0;white-space:pre-wrap;
+  word-break:break-all;margin-bottom:24px;max-height:140px;overflow:auto;
+}
+.modal-actions{display:flex;gap:12px}
+.modal-yes{
+  flex:1;padding:12px;border:none;border-radius:4px;cursor:pointer;
+  background:#c0392b;font-family:'DM Serif Display',serif;font-size:1rem;color:#fff;
+  transition:background .15s;
+}
+.modal-yes:hover{background:#e74c3c}
+.modal-no{
+  flex:1;padding:12px;border:1px solid var(--border);border-radius:4px;cursor:pointer;
+  background:none;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--muted);
+  transition:all .15s;
+}
+.modal-no:hover{border-color:var(--text);color:var(--text)}
+
+/* AUDIT TABLE */
+.audit-wrap{overflow:auto;border:1px solid var(--border);border-radius:4px}
+
+/* empty state */
+.empty{text-align:center;padding:60px 20px;color:var(--dim)}
+.empty-icon{font-size:3rem;margin-bottom:16px}
+.empty p{font-size:.78rem;letter-spacing:.08em}
+
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">⚖️ NL2SQL</div>
+      <div class="logo-sub">Intelligence Platform</div>
+    </div>
+
+    <div class="user-chip">
+      <div class="user-name">{{ user.name }}</div>
+      <div class="user-role">{{ user.emp_id }}</div>
+      <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Databases</div>
+      <div id="db-list">
+        {% for db in db_files %}
+        <button class="db-btn {% if db == active_db %}active{% endif %}"
+                onclick="switchDb('{{ db }}')" title="{{ db }}">
+          <span class="db-icon">{% if db == active_db %}✅{% else %}📁{% endif %}</span>
+          {{ db }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="margin-top:12px">
+      <div class="sidebar-label">Upload Database</div>
+      <div class="upload-area" onclick="document.getElementById('file-input').click()">
+        <p>📤 Drop or click to upload</p>
+        <p style="margin-top:4px;font-size:.55rem;color:var(--dim)">.sqlite · .db · .sqlite3</p>
+      </div>
+      <input type="file" id="file-input" accept=".sqlite,.db,.sqlite3" onchange="uploadDb(event)"/>
+    </div>
+
+    <div class="sidebar-footer">
+      <button class="logout-btn" onclick="doLogout()">⏻ &nbsp;Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TAB NAV -->
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tab-console" onclick="switchTab('console')">⌨ Query Console</button>
+      {% if user.role != 'Employee' %}
+      <button class="tab-btn" id="tab-audit" onclick="switchTab('audit')">📋 Audit Logs</button>
+      {% endif %}
+    </div>
+
+    <!-- CONSOLE TAB -->
+    <div id="pane-console" class="main-inner">
+      <div class="active-banner">
+        🗄 Active context: &nbsp;<strong id="active-db-label">{{ active_db }}</strong>
+      </div>
+
+      <div class="query-input-wrap">
+        <input id="query-input" type="text"
+               placeholder="Ask anything in natural language — e.g. Show all contracts signed in 2024"
+               onkeydown="if(event.key==='Enter') sendQuery()"/>
+        <button class="send-btn" id="send-btn" onclick="sendQuery()">Execute →</button>
+      </div>
+
+      <!-- Pipeline steps (hidden until query) -->
+      <div class="pipeline" id="pipeline" style="display:none">
+        <div class="pipeline-title">⚡ Intelligence Pipeline</div>
+        <div id="steps-container"></div>
+      </div>
+
+      <!-- Result area -->
+      <div id="result-area"></div>
+    </div>
+
+    <!-- AUDIT TAB -->
+    {% if user.role != 'Employee' %}
+    <div id="pane-audit" class="main-inner" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <span style="font-size:.7rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase">Audit Trail</span>
+        <button class="export-btn" style="margin-left:0" onclick="loadAuditLogs()">↻ Refresh</button>
+      </div>
+      <div class="audit-wrap" id="audit-container">
+        <div class="empty"><div class="empty-icon">📋</div><p>Switch to this tab to load logs</p></div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+<!-- DML CONFIRMATION MODAL -->
+<div class="modal-overlay" id="dml-modal">
+  <div class="modal">
+    <div class="modal-icon">⚠️</div>
+    <h2>Confirm Data Modification</h2>
+    <div class="modal-sub" id="modal-sub">
+      This operation will affect <span class="row-count" id="modal-row-count">?</span> row(s).
+      This action <strong style="color:var(--red)">cannot be undone</strong>. Review the SQL carefully before proceeding.
+    </div>
+    <div class="modal-sql" id="modal-sql"></div>
+    <div class="modal-actions">
+      <button class="modal-no" onclick="closeDmlModal()">✕ &nbsp;Cancel</button>
+      <button class="modal-yes" id="modal-yes-btn" onclick="confirmDml()">✓ &nbsp;Yes, Execute</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- State ----
+const STEPS = [
+  "📂 Indexing Database Schema",
+  "🛡️ Running Ambiguity Guard",
+  "🧠 LLM SQL Generation (Qwen 2.5)",
+  "🧼 Syntax Sanitization",
+  "🔍 Dry-Run Trace Analysis",
+  "⚙️ Finalizing Execution & Audit"
+];
+let pendingDml = null;
+let pendingUserQuery = '';
+let activeDb = "{{ active_db }}";
+
+// ---- Pipeline UI ----
+function initSteps(){
+  const c = document.getElementById('steps-container');
+  c.innerHTML = STEPS.map((s,i)=>
+    `<div class="step" id="step-${i}">
+       <span class="step-dot pending" id="dot-${i}"></span>
+       <span class="step-label" id="lbl-${i}">${s}</span>
+     </div>`
+  ).join('');
+  document.getElementById('pipeline').style.display='block';
+}
+
+function setStep(idx, status){
+  const dot = document.getElementById(`dot-${idx}`);
+  const lbl = document.getElementById(`lbl-${idx}`);
+  if(!dot) return;
+  dot.className = `step-dot ${status}`;
+  lbl.className = `step-label ${status}`;
+  if(status==='active') lbl.style.color='var(--blue)';
+  else if(status==='done') lbl.style.color='var(--text)';
+}
+
+// ---- Query ----
+async function sendQuery(){
+  const input = document.getElementById('query-input');
+  const q = input.value.trim();
+  if(!q) return;
+
+  pendingUserQuery = q;
+  document.getElementById('send-btn').disabled = true;
+  document.getElementById('result-area').innerHTML = '';
+  initSteps();
+
+  const es = new EventSource(`/api/query?dummy=${Date.now()}`);
+
+  // We need POST + SSE → use fetch with ReadableStream
+  es.close();
+  await streamQuery(q);
+}
+
+async function streamQuery(q){
+  try{
+    const resp = await fetch('/api/query', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({query: q})
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buf += decoder.decode(value, {stream:true});
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for(const line of lines){
+        if(line.startsWith('data: ')){
+          handleEvent(JSON.parse(line.slice(6)));
+        }
+      }
+    }
+  } catch(e){
+    showResult({result_type:'error', message: e.message});
+  } finally {
+    document.getElementById('send-btn').disabled = false;
+  }
+}
+
+function handleEvent(ev){
+  if(ev.done){
+    showResult(ev);
+  } else {
+    setStep(ev.step, ev.status);
+  }
+}
+
+function showResult(ev){
+  const area = document.getElementById('result-area');
+  if(ev.result_type === 'data'){
+    area.innerHTML = buildTable(ev);
+  } else if(ev.result_type === 'warning'){
+    area.innerHTML = `<div class="alert alert-warning">🔍 ${ev.message}</div>`;
+  } else if(ev.result_type === 'error' || ev.result_type === 'rbac_error'){
+    area.innerHTML = `<div class="alert alert-error">${ev.message}</div>`;
+  } else if(ev.result_type === 'dml_confirm'){
+    openDmlModal(ev.sql, ev.affected_rows);
+  }
+}
+
+function buildTable(ev){
+  const rows = ev.rows || [];
+  const cols = ev.columns || [];
+  let html = `
+    <div class="result-section">
+      <div style="font-size:.62rem;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px">📄 Generated SQL</div>
+      <div class="sql-block">${escHtml(ev.sql)}</div>
+      <div class="result-meta">
+        ✅ &nbsp;${ev.count} record${ev.count!==1?'s':''} returned
+        <button class="export-btn" onclick="exportCsv()">📥 Export CSV</button>
+      </div>`;
+
+  if(rows.length===0){
+    html += `<div class="alert alert-warning">No records found.</div>`;
+  } else {
+    html += `<div class="table-wrap"><table>
+      <thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead>
+      <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${escHtml(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+  html += `</div>`;
+  window._lastResult = ev;
+  return html;
+}
+
+function exportCsv(){
+  const ev = window._lastResult;
+  if(!ev) return;
+  const cols = ev.columns;
+  const rows = ev.rows;
+  let csv = cols.join(',') + '\n';
+  rows.forEach(r => { csv += cols.map(c=>JSON.stringify(r[c]??'')).join(',') + '\n'; });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'export.csv';
+  a.click();
+}
+
+// ---- DML Modal ----
+function openDmlModal(sql, affected){
+  pendingDml = sql;
+  const cnt = affected < 0 ? 'an unknown number of' : affected;
+  document.getElementById('modal-row-count').textContent = cnt;
+  document.getElementById('modal-sql').textContent = sql;
+  document.getElementById('dml-modal').classList.add('show');
+}
+
+function closeDmlModal(){
+  document.getElementById('dml-modal').classList.remove('show');
+  pendingDml = null;
+}
+
+async function confirmDml(){
+  if(!pendingDml) return;
+  const btn = document.getElementById('modal-yes-btn');
+  btn.disabled = true;
+  btn.textContent = 'Executing…';
+
+  try{
+    const r = await fetch('/api/dml-execute', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({sql: pendingDml, user_query: pendingUserQuery})
+    });
+    const d = await r.json();
+    closeDmlModal();
+    const area = document.getElementById('result-area');
+    if(d.success){
+      area.innerHTML = `<div class="alert alert-success">✅ ${d.message}</div>`;
+    } else {
+      area.innerHTML = `<div class="alert alert-error">❌ ${d.error}</div>`;
+    }
+  } catch(e){
+    closeDmlModal();
+    document.getElementById('result-area').innerHTML = `<div class="alert alert-error">❌ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✓  Yes, Execute';
+  }
+}
+
+// ---- DB switch ----
+async function switchDb(name){
+  const r = await fetch('/api/set-db',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({db_name:name})
+  });
+  const d = await r.json();
+  if(d.success){
+    activeDb = name;
+    document.getElementById('active-db-label').textContent = name;
+    document.querySelectorAll('.db-btn').forEach(b=>{
+      const isActive = b.textContent.trim().replace(/^[✅📁]\s*/,'') === name;
+      b.classList.toggle('active', isActive);
+      b.querySelector('.db-icon').textContent = isActive ? '✅' : '📁';
+    });
+  }
+}
+
+// ---- Upload ----
+async function uploadDb(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const fd = new FormData();
+  fd.append('file', file);
+  const r = await fetch('/api/upload-db', {method:'POST', body:fd});
+  const d = await r.json();
+  if(d.success){
+    location.reload();
+  } else {
+    alert(d.error || 'Upload failed');
+  }
+}
+
+// ---- Tab switch ----
+function switchTab(tab){
+  document.getElementById('pane-console').style.display = tab==='console'?'':'none';
+  const auditPane = document.getElementById('pane-audit');
+  if(auditPane) auditPane.style.display = tab==='audit'?'':'none';
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.toggle('active', b.id===`tab-${tab}`);
+  });
+  if(tab==='audit') loadAuditLogs();
+}
+
+// ---- Audit logs ----
+async function loadAuditLogs(){
+  const container = document.getElementById('audit-container');
+  container.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div><p>Loading…</p></div>';
+  try{
+    const r = await fetch('/api/audit-logs');
+    const d = await r.json();
+    if(!d.logs || d.logs.length===0){
+      container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>No audit logs yet</p></div>';
+      return;
+    }
+    const cols = Object.keys(d.logs[0]);
+    let html = `<table><thead><tr>${cols.map(c=>`<th>${escHtml(c)}</th>`).join('')}</tr></thead><tbody>`;
+    d.logs.forEach(row=>{
+      html += `<tr>${cols.map(c=>`<td>${escHtml(String(row[c]??''))}</td>`).join('')}</tr>`;
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  } catch(e){
+    container.innerHTML = `<div class="alert alert-error">Failed to load logs: ${e.message}</div>`;
+  }
+}
+
+// ---- Logout ----
+async function doLogout(){
+  await fetch('/logout', {method:'POST'});
+  window.location.href = '/';
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Close modal on overlay click
+document.getElementById('dml-modal').addEventListener('click', function(e){
+  if(e.target===this) closeDmlModal();
+});
+</script>
+</body>
+</html>
