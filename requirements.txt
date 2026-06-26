@@ -1,13 +1,13 @@
+# Web Framework and Production Server
+flask
+gunicorn
+
 # NLP and LLM
 langchain-ollama
 python-dotenv
 
 # Data Handling and Execution
 pandas
-
-
-# Frontend (for Vasavi)
-streamlit
 
 # Utilities
 sqlparse
