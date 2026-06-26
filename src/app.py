@@ -4,17 +4,12 @@ import sys
 # Force Python to look inside the 'src' folder for imports
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-# NOW your original imports will work perfectly on both Localhost and Render!
 from extensions import db_session
-
-
 from flask import Flask
-# from extensions import db_session
 from routes.auth import auth_bp
 from routes.query import query_bp
 from routes.audit import audit_bp
 from routes.database import database_bp
-import os
 
 def create_app():
     app = Flask(__name__)
@@ -31,6 +26,11 @@ def create_app():
 
     return app
 
+# CREATE THE APP EXPLICITLY AT THE GLOBAL LEVEL SO GUNICORN CAN SEE IT
+app = create_app()
+
 if __name__ == '__main__':
+    # Localhost development execution
+    app.run(debug=True, threaded=True, port=5000)
     app = create_app()
     app.run(debug=True, threaded=True, port=5000)
