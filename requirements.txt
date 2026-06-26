@@ -4,7 +4,7 @@ python-dotenv
 
 # Data Handling and Execution
 pandas
-sqlite3
+
 
 # Frontend (for Vasavi)
 streamlit
