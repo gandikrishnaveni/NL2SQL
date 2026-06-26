@@ -1,3 +1,13 @@
+import os
+import sys
+
+# Force Python to look inside the 'src' folder for imports
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+# NOW your original imports will work perfectly on both Localhost and Render!
+from extensions import db_session
+
+
 from flask import Flask
 # from extensions import db_session
 from routes.auth import auth_bp
