@@ -1,5 +1,5 @@
 from flask import Flask
-from extensions import db_session
+# from extensions import db_session
 from routes.auth import auth_bp
 from routes.query import query_bp
 from routes.audit import audit_bp
